@@ -42,7 +42,10 @@ struct Home: View {
             .navigationTitle("Open Whisper")
             .onAppear { if !configured { wizard = true } }
             .onChange(of: phase) { _, value in
-                if value == .active { studio.permission = AVAudioSession.sharedInstance().recordPermission }
+                if value == .active {
+                    studio.permission = AVAudioSession.sharedInstance().recordPermission
+                    try? Inbox.shared().discardExpired()
+                }
             }
             .sheet(isPresented: $wizard) { Wizard { configured = true; wizard = false } }
             .confirmationDialog("Effacer le texte et les dictées partagées ?", isPresented: $confirmClear) {
@@ -97,12 +100,14 @@ struct MicrophoneSection: View {
 }
 
 struct VoiceOptions: View {
+    @AppStorage("finSurPause", store: Settings.defaults()) var stopOnPause = false
     @AppStorage("ponctuation", store: Settings.defaults()) var punctuation = true
     var body: some View {
         Section("Transcription") {
             LabeledContent("Langue", value: "Français")
             Toggle("Conserver la ponctuation", isOn: $punctuation)
-            Text("Une pause conserve l’enregistrement en cours. Relâchez pour terminer. Durée maximale par dictée : deux minutes.")
+            Toggle("Terminer après deux secondes de silence", isOn: $stopOnPause)
+            Text("Relâchez pour terminer. Durée maximale par dictée : deux minutes.")
         }
         MicrophoneSection()
     }

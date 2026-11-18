@@ -12,13 +12,16 @@ import SwiftUI
     let engine = Engine()
     private var recorder: AVAudioRecorder?
     private let scratch = URL.temporaryDirectory.appendingPathComponent("ow-capture.wav")
+    private var pauseTimer: Timer?
+    private var lastSound: TimeInterval?
     private var attempt = UUID()
     private var observers: [NSObjectProtocol] = []
 
     override init() {
         super.init()
+        try? Inbox.shared().discardExpired()
         try? FileManager.default.removeItem(at: scratch)
-        let notifications = [AVAudioSession.interruptionNotification, UIApplication.didEnterBackgroundNotification,
+        let notifications = [AVAudioSession.interruptionNotification, UIApplication.willResignActiveNotification, UIApplication.didEnterBackgroundNotification,
                              UIApplication.protectedDataWillBecomeUnavailableNotification, AVAudioSession.mediaServicesWereResetNotification]
         for name in notifications {
             observers.append(NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
@@ -71,10 +74,18 @@ import SwiftUI
                 AVFormatIDKey: kAudioFormatLinearPCM, AVSampleRateKey: 16000,
                 AVNumberOfChannelsKey: 1, AVLinearPCMBitDepthKey: 16, AVLinearPCMIsFloatKey: false])
             recorder = capture
+            guard capture.prepareToRecord() else { throw Message("Impossible de préparer le fichier audio.") }
             try FileManager.default.setAttributes([.protectionKey: FileProtectionType.complete], ofItemAtPath: scratch.path)
             capture.delegate = self
             guard capture.record(forDuration: 120) else { throw Message("Le microphone est indisponible.") }
             recording = true
+            if Settings.defaults().bool(forKey: "finSurPause") {
+                capture.isMeteringEnabled = true
+                lastSound = nil
+                pauseTimer = Timer.scheduledTimer(withTimeInterval: 0.15, repeats: true) { [weak self] _ in
+                    Task { @MainActor in self?.checkPause() }
+                }
+            }
             note = "Enregistrement · glissez vers la gauche pour annuler."
             feedback()
         } catch { releaseAudio(); note = error.localizedDescription }
@@ -83,7 +94,16 @@ import SwiftUI
     private func feedback() {
         if Settings.defaults().bool(forKey: "haptique") { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
     }
+    private func checkPause() {
+        guard recording, let recorder else { return }
+        recorder.updateMeters()
+        if recorder.averagePower(forChannel: 0) > -43 { lastSound = recorder.currentTime }
+        else if let lastSound, recorder.currentTime - lastSound >= 2 { finish() }
+    }
     private func releaseAudio() {
+        pauseTimer?.invalidate()
+        pauseTimer = nil
+        lastSound = nil
         recorder?.delegate = nil
         recorder?.stop()
         recorder = nil

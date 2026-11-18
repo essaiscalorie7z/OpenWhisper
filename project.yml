@@ -19,6 +19,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: fr.openwhisper.mobile
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         INFOPLIST_KEY_CFBundleDisplayName: Open Whisper
         INFOPLIST_KEY_NSMicrophoneUsageDescription: Open Whisper utilise le microphone pendant votre dictée dans l’application.
         INFOPLIST_KEY_UILaunchScreen_Generation: YES

@@ -45,6 +45,21 @@ struct Inbox {
         return Date().timeIntervalSince(ticket.created) < 600 ? ticket.text : nil
     }
 
+    func discardExpired(now: Date = Date()) {
+        let fm = FileManager.default
+        // This maintenance path runs in the sole publisher (the foreground app).
+        if let data = try? Data(contentsOf: pending),
+           let ticket = try? JSONDecoder().decode(Ticket.self, from: data),
+           now.timeIntervalSince(ticket.created) >= 600 {
+            try? fm.removeItem(at: pending)
+        }
+        let files = (try? fm.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.contentModificationDateKey])) ?? []
+        for claim in files where claim.lastPathComponent.hasPrefix("lecture-") {
+            if let modified = try? claim.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
+               now.timeIntervalSince(modified) >= 600 { try? fm.removeItem(at: claim) }
+        }
+    }
+
     func clear() throws {
         let files = try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)
         for url in files where url == pending || url.lastPathComponent.hasPrefix("lecture-") {
