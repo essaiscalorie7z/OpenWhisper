@@ -1,0 +1,6 @@
+Lexique français fourni avec Open Whisper
+FrequencyWords, Hermit Dave, données OpenSubtitles 2018 (OPUS).
+Source : https://github.com/hermitdave/FrequencyWords/blob/525f9b560de45753a5ea01069454e72e9aa541c6/content/2018/fr/fr_50k.txt
+Licence du contenu et de fr.tsv : Creative Commons Attribution — Partage dans les mêmes conditions 4.0 International.
+https://creativecommons.org/licenses/by-sa/4.0/
+Adaptation Open Whisper : sélection de mots alphabétiques minuscules, ajout d’une clé sans diacritiques, remplacement des fréquences par un rang et tri des clés. La licence du lexique concerne le fichier de données dérivé.

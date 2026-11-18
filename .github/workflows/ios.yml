@@ -17,7 +17,8 @@ jobs:
         id: tests
         run: |
           set -o pipefail
-          device=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; print(next(d["udid"] for r,g in sorted(json.load(sys.stdin)["devices"].items(),reverse=True) if "iOS" in r for d in g if "iPhone" in d["name"]))')
+          sdk=$(xcrun --sdk iphonesimulator --show-sdk-version)
+          device=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; groups=json.load(sys.stdin)["devices"]; suffix="iOS-"+sys.argv[1].replace(".","-"); phones=[(r,d) for r,g in groups.items() if ".iOS-" in r for d in g if "iPhone" in d["name"]]; print(min(phones,key=lambda item:not item[0].endswith(suffix))[1]["udid"])' "$sdk")
           xcodebuild test -scheme OpenWhisper -configuration Debug -destination "id=$device" -derivedDataPath build -parallel-testing-enabled NO -resultBundlePath Tests.xcresult | tee tests.log
       - name: Compiler pour iPhone
         id: device

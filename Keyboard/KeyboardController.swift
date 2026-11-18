@@ -223,7 +223,9 @@ class KeyboardController: UIInputViewController {
             + (checker.guesses(forWordRange: range, in: token, language: "fr_FR") ?? [])
         var seen = Set<String>()
         let fixes = French.corrections[token].map { [$0] } ?? []
-        return Array((fixes + candidates + French.localCompletions(token) + [token]).filter { seen.insert($0).inserted }.prefix(2))
+        let local = FrequencyLexicon.bundled.completions(token)
+        let ranked = fixes + candidates + local
+        return Array((ranked + French.localCompletions(token) + [token]).filter { seen.insert($0).inserted }.prefix(2))
     }
     private var proposed: [String] = []
     private var proposedContext = ""

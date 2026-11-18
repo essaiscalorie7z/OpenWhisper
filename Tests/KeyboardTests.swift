@@ -57,6 +57,11 @@ final class KeyboardTests: XCTestCase {
         XCTAssertEqual(keyboard.proxy.field.text, "Az9# \n")
         XCTAssertTrue(keyboard.buttons(in: keyboard.view).contains { $0.accessibilityLabel == "Clavier suivant" })
     }
+    func testBundledFrenchCompletionsWithoutSystemDictionary() {
+        XCTAssertEqual(FrequencyLexicon.bundled.completions("ordinat").count, 2)
+        XCTAssertTrue(FrequencyLexicon.bundled.completions("ordinat").contains("ordinateur"))
+        XCTAssertTrue(FrequencyLexicon.bundled.completions("Écol").allSatisfy { $0.hasPrefix("Écol") || $0.hasPrefix("Ecol") })
+    }
     @MainActor func testCorrectionWithoutSystemDictionary() throws {
         let keyboard = HostedKeyboard()
         keyboard.loadViewIfNeeded()

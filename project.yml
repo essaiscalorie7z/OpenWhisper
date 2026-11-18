@@ -33,7 +33,12 @@ targets:
   Clavier:
     type: app-extension
     platform: iOS
-    sources: [Keyboard, Shared]
+    sources:
+      - path: Keyboard
+        excludes: [Lexique]
+      - path: Keyboard/Lexique
+        buildPhase: resources
+      - path: Shared
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: fr.openwhisper.mobile.clavier
@@ -50,6 +55,9 @@ targets:
       - path: Tests/Fixtures
         buildPhase: resources
       - path: Keyboard/KeyboardController.swift
+      - path: Keyboard/FrequencyLexicon.swift
+      - path: Keyboard/Lexique
+        buildPhase: resources
       - path: Shared
     dependencies:
       - target: OpenWhisper

@@ -41,6 +41,7 @@ def verify(path):
             infos[prefix] = info
         check(infos[ext]["CFBundleIdentifier"] == infos[app]["CFBundleIdentifier"] + ".clavier", "Identifiants incohérents")
         check(infos[ext]["NSExtension"]["NSExtensionPointIdentifier"] == "com.apple.keyboard-service", "Extension clavier absente")
+        check(len(archive.read(ext + "fr.tsv")) > 500_000, "Lexique français absent")
         check(app + "Assets.car" in paths, "Ressources visuelles absentes")
         check(not any(p.endswith((".xctest/", ".bin", ".wav", "embedded.mobileprovision")) for p in paths),
               "Ressources de test, modèle ou profil dans le produit")

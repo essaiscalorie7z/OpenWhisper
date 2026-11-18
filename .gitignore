@@ -7,3 +7,4 @@ vendor/
 *.ipa
 .DS_Store
 Tests/Fixtures/*.bin
+Keyboard/Lexique/fr.tsv

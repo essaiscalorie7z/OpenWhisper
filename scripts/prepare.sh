@@ -14,4 +14,6 @@ if [[ ! -f "$model" ]]; then
   mv "$model.part" "$model"
 fi
 echo "422f1ae452ade6f30a004d7e5c6a43195e4433bc370bf23fac9cc591f01a8898  $model" | shasum -a 256 -c -
+curl -fL --retry 3 -o vendor/fr_50k.txt https://raw.githubusercontent.com/hermitdave/FrequencyWords/525f9b560de45753a5ea01069454e72e9aa541c6/content/2018/fr/fr_50k.txt
+python3 scripts/lexicon.py vendor/fr_50k.txt
 xcodegen generate
