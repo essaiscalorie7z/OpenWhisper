@@ -27,10 +27,10 @@ jobs:
           xcodebuild build -scheme OpenWhisper -configuration Release -destination 'generic/platform=iOS' -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO | tee release.log
       - name: Vérifier et empaqueter
         id: package
-        if: steps.device.outcome == 'success'
+        if: always() && steps.device.outcome == 'success'
         run: bash scripts/package.sh
       - name: Publier l’IPA vérifié
-        if: steps.package.outcome == 'success'
+        if: always() && steps.package.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: OpenWhisper-unsigned

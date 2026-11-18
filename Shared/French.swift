@@ -27,6 +27,13 @@ enum French {
     tard téléphone temps tenir terminer toujours toute toutes travail travailler très trouver
     utiliser vacances vendredi venir vers ville visite voici voilà voir votre voudrais voulez vraiment
     """.split(whereSeparator: { $0.isWhitespace }).map(String.init)
+    // High-confidence forms remain available when the iOS French lexicon is absent.
+    static let corrections = ["bonjor": "bonjour", "bonjouur": "bonjour", "bonsoirre": "bonsoir",
+                              "mercie": "merci", "beacoup": "beaucoup", "beaucoups": "beaucoup",
+                              "aujoudhui": "aujourd’hui", "aujourdhui": "aujourd’hui",
+                              "apres": "après", "deja": "déjà", "tres": "très", "bientot": "bientôt",
+                              "francais": "français", "francaise": "française", "premiere": "première",
+                              "probleme": "problème", "desole": "désolé", "reponse": "réponse"]
     static func localCompletions(_ word: String) -> [String] {
         guard !word.isEmpty else { return [] }
         return common.lazy.filter { $0.hasPrefix(word.lowercased()) && $0 != word.lowercased() }

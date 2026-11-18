@@ -2,7 +2,7 @@ import XCTest
 import UIKit
 
 @MainActor private final class FieldProxy: NSObject, UITextDocumentProxy {
-    let field = UITextField()
+    let field = UITextView()
     var documentContextBeforeInput: String? { field.text }
     var documentContextAfterInput: String? { "" }
     var selectedText: String? { nil }
@@ -57,6 +57,15 @@ final class KeyboardTests: XCTestCase {
         XCTAssertEqual(keyboard.proxy.field.text, "Az9# \n")
         XCTAssertTrue(keyboard.buttons(in: keyboard.view).contains { $0.accessibilityLabel == "Clavier suivant" })
     }
+    @MainActor func testCorrectionWithoutSystemDictionary() throws {
+        let keyboard = HostedKeyboard()
+        keyboard.loadViewIfNeeded()
+        keyboard.proxy.field.text = "beacoup"
+        keyboard.viewWillAppear(false)
+        try keyboard.tap("espace")
+        XCTAssertEqual(keyboard.proxy.field.text, "beaucoup ")
+    }
+
     @MainActor func testSuggestionsShiftAccentsAndMicrophoneHelp() throws {
         let keyboard = HostedKeyboard()
         keyboard.loadViewIfNeeded()

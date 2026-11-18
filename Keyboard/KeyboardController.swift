@@ -222,7 +222,8 @@ class KeyboardController: UIInputViewController {
         let candidates = (checker.completions(forPartialWordRange: range, in: token, language: "fr_FR") ?? [])
             + (checker.guesses(forWordRange: range, in: token, language: "fr_FR") ?? [])
         var seen = Set<String>()
-        return Array((candidates + French.localCompletions(token) + [token]).filter { seen.insert($0).inserted }.prefix(2))
+        let fixes = French.corrections[token].map { [$0] } ?? []
+        return Array((fixes + candidates + French.localCompletions(token) + [token]).filter { seen.insert($0).inserted }.prefix(2))
     }
     private var proposed: [String] = []
     private var proposedContext = ""
@@ -252,7 +253,9 @@ class KeyboardController: UIInputViewController {
            after.first?.isLetter != true {
             let token = word
             let range = NSRange(location: 0, length: token.utf16.count)
-            if token.count > 2, token == token.lowercased(),
+            if let known = French.corrections[token] {
+                replaceWord(with: known)
+            } else if token.count > 2, token == token.lowercased(),
                checker.rangeOfMisspelledWord(in: token, range: range, startingAt: 0, wrap: false, language: "fr_FR").location != NSNotFound,
                let first = checker.guesses(forWordRange: range, in: token, language: "fr_FR")?.first {
                 replaceWord(with: first)
