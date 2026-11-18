@@ -3,62 +3,79 @@ on: [push, pull_request, workflow_dispatch]
 permissions:
   contents: read
 jobs:
-  build:
+  iphone:
+    name: IPA iPhone arm64
     runs-on: macos-15-intel
-    timeout-minutes: 55
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-      - name: Préparer le projet et les dépendances vérifiées
+      - name: Générer le projet
         run: |
           xcodebuild -version
           command -v xcodegen || brew install xcodegen
-          bash scripts/prepare.sh
-      - name: Tester sur iPhone simulé
-        id: tests
-        run: |
-          set -o pipefail
-          sdk=$(xcrun --sdk iphonesimulator --show-sdk-version)
-          device=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; groups=json.load(sys.stdin)["devices"]; suffix="iOS-"+sys.argv[1].replace(".","-"); phones=[(r,d) for r,g in groups.items() if ".iOS-" in r for d in g if "iPhone" in d["name"]]; print(min(phones,key=lambda item:not item[0].endswith(suffix))[1]["udid"])' "$sdk")
-          xcodebuild test -scheme OpenWhisper -configuration Debug -destination "id=$device" -derivedDataPath build -parallel-testing-enabled NO -resultBundlePath Tests.xcresult | tee tests.log
-      - name: Compiler pour iPhone
-        id: device
-        if: success() || failure()
+          bash scripts/prepare.sh --device
+      - name: Compiler la Release pour appareil
         run: |
           set -o pipefail
           xcodebuild build -scheme OpenWhisper -configuration Release -destination 'generic/platform=iOS' -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO | tee release.log
       - name: Vérifier et empaqueter
-        id: package
-        if: always() && steps.device.outcome == 'success'
-        run: bash scripts/package.sh
-      - name: Publier l’IPA vérifié
-        if: always() && steps.package.outcome == 'success'
-        uses: actions/upload-artifact@v4
+        run: bash -x scripts/package.sh
+      - uses: actions/upload-artifact@v4
         with:
           name: OpenWhisper-unsigned
           path: |
             dist/OpenWhisper-unsigned.ipa
             dist/SHA256.txt
           if-no-files-found: error
-      - name: Rapport
+      - uses: actions/upload-artifact@v4
         if: always()
+        with:
+          name: Journal-Release
+          path: release.log
+  simulateur:
+    name: Tests iOS
+    runs-on: macos-15-intel
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Préparer l’application et le modèle de test
+        run: |
+          xcodebuild -version
+          command -v xcodegen || brew install xcodegen
+          bash scripts/prepare.sh
+      - name: Exécuter XCTest
+        run: |
+          set -o pipefail
+          sdk=$(xcrun --sdk iphonesimulator --show-sdk-version)
+          device=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; groups=json.load(sys.stdin)["devices"]; suffix="iOS-"+sys.argv[1].replace(".","-"); phones=[(r,d) for r,g in groups.items() if ".iOS-" in r for d in g if "iPhone" in d["name"]]; print(min(phones,key=lambda item:not item[0].endswith(suffix))[1]["udid"])' "$sdk")
+          xcodebuild test -scheme OpenWhisper -configuration Debug -destination "id=$device" -derivedDataPath build -parallel-testing-enabled NO -resultBundlePath Tests.xcresult | tee tests.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Resultats-XCTest
+          path: |
+            Tests.xcresult
+            tests.log
+  rapport:
+    name: Rapport de validation
+    needs: [iphone, simulateur]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rédiger le rapport
         run: |
           cat > rapport.md <<REPORT
           # Open Whisper
           Commit $GITHUB_SHA
-          * Tests XCTest sur simulateur (disposition, règles, transfert local, silence et audio français synthétique) — ${{ steps.tests.outcome }}
-          * Compilation Release iphoneos — ${{ steps.device.outcome }}
-          * Validation arm64, plateforme iOS, extension embarquée, structure IPA et CRC — ${{ steps.package.outcome }}
+          * Compilation Release iphoneos, contrôle arm64, plateforme iOS, extension, lexique, structure IPA, CRC et publication — ${{ needs.iphone.result }}
+          * XCTest sur simulateur (contrôleur UIKit, clavier multiligne, correction, lexique français, transfert local, modèle, progression réseau, fichiers vocaux et silence) — ${{ needs.simulateur.result }}
           * Parcours implémenté : capture dans l’app, inférence locale, transfert volontaire, insertion par le clavier actif.
+          * Les journaux Release et le bundle XCTest sont téléchargeables dans les artefacts de ce run.
           * À vérifier sur iPhone signé : permissions, App Group interprocessus, interruptions, insertion dans Notes/Messages, ergonomie, mémoire, chauffe et latence.
           * Le clavier ne capture pas le microphone. Les champs sécurisés et certains champs téléphoniques utilisent le clavier système.
           REPORT
           cat rapport.md >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
-        if: always()
         with:
           name: Rapport-iOS
-          path: |
-            rapport.md
-            Tests.xcresult
-            release.log
-            tests.log
+          path: rapport.md

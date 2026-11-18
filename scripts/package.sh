@@ -7,7 +7,7 @@ id() { /usr/libexec/PlistBuddy -c "Print :$2" "$1/Info.plist"; }
 [[ "$(id "$ext" CFBundleIdentifier)" == "$(id "$app" CFBundleIdentifier)".clavier ]]
 for bundle in "$app" "$ext" "$app/Frameworks/whisper.framework"; do
   binary="$bundle/$(id "$bundle" CFBundleExecutable)"
-  xcrun lipo -verify_arch arm64 "$binary"
+  xcrun lipo "$binary" -verify_arch arm64
   xcrun vtool -show-build "$binary" | grep -Eq 'platform IOS$'
 done
 for bundle in "$app" "$ext"; do
