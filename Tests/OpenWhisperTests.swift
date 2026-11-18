@@ -33,6 +33,22 @@ final class OpenWhisperTests: XCTestCase {
         XCTAssertTrue(VoiceGate.containsSound(Array(repeating: 0.1, count: 16000)))
     }
 
+    func testDownloadIntegrityProgressAndPreparation() async throws {
+        // This test runs in the dedicated simulator test host.
+        let model = Model.base
+        if model.installed { try FileManager.default.removeItem(at: model.file) }
+        let progress = expectation(description: "Réception de données du modèle")
+        progress.assertForOverFulfill = false
+        let engine = Engine()
+        try await engine.install(model) { bytes in if bytes > 0 { progress.fulfill() } }
+        defer { try? FileManager.default.removeItem(at: model.file) }
+        await fulfillment(of: [progress], timeout: 5)
+        XCTAssertTrue(model.installed)
+        let bytes = try FileManager.default.attributesOfItem(atPath: model.file.path)[.size] as? NSNumber
+        XCTAssertEqual(bytes?.int64Value, model.size)
+        await engine.unload()
+    }
+
     func testFrenchInferenceAndSilence() async throws {
         let bundle = Bundle(for: Self.self)
         let model = Model.base

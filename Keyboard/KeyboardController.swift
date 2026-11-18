@@ -12,6 +12,7 @@ class KeyboardController: UIInputViewController {
     private var choices: [UIButton] = []
     private var pendingSpace = false
     private var category = 0
+    private var lastKeyboardType: UIKeyboardType?
     private var eraseTimer: Timer?
     private var instruction: String?
     private let categories = ["Visages", "Gestes", "Nature", "Objets"]
@@ -43,7 +44,7 @@ class KeyboardController: UIInputViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         if hasFullAccess { prefs.set(Date(), forKey: "derniereActivation") }
-        mode = .letters
+        setModeForField()
         adjustShift()
         render()
     }
@@ -62,7 +63,16 @@ class KeyboardController: UIInputViewController {
     }
     override func textDidChange(_ textInput: UITextInput?) {
         super.textDidChange(textInput)
-        if isViewLoaded { pendingSpace = false; adjustShift(); render() }
+        if isViewLoaded {
+            pendingSpace = false
+            if lastKeyboardType != (textDocumentProxy.keyboardType ?? .default) { setModeForField() }
+            adjustShift(); render()
+        }
+    }
+    private func setModeForField() {
+        let type = textDocumentProxy.keyboardType ?? .default
+        lastKeyboardType = type
+        mode = [.numberPad, .decimalPad, .numbersAndPunctuation, .asciiCapableNumberPad].contains(type) ? .numbers : .letters
     }
     private var before: String { textDocumentProxy.documentContextBeforeInput ?? "" }
     private var after: String { textDocumentProxy.documentContextAfterInput ?? "" }
@@ -208,7 +218,7 @@ class KeyboardController: UIInputViewController {
         let candidates = (checker.completions(forPartialWordRange: range, in: token, language: "fr_FR") ?? [])
             + (checker.guesses(forWordRange: range, in: token, language: "fr_FR") ?? [])
         var seen = Set<String>()
-        return Array((candidates + [token]).filter { seen.insert($0).inserted }.prefix(2))
+        return Array((candidates + French.localCompletions(token) + [token]).filter { seen.insert($0).inserted }.prefix(2))
     }
     private var proposed: [String] = []
     private var proposedContext = ""
@@ -217,7 +227,7 @@ class KeyboardController: UIInputViewController {
         proposed = alternatives()
         for (i, b) in choices.enumerated() {
             b.setTitle(i < proposed.count ? proposed[i] : "", for: .normal)
-            b.isEnabled = i < proposed.count
+            b.isEnabled = i < proposed.count && (textDocumentProxy.selectedText ?? "").isEmpty && after.first?.isLetter != true
         }
     }
     private func replaceWord(with value: String) {
@@ -242,6 +252,14 @@ class KeyboardController: UIInputViewController {
                checker.rangeOfMisspelledWord(in: token, range: range, startingAt: 0, wrap: false, language: "fr_FR").location != NSNotFound,
                let first = checker.guesses(forWordRange: range, in: token, language: "fr_FR")?.first {
                 replaceWord(with: first)
+            }
+        }
+        if writingWords && ["!", "?", ";", ":"].contains(text) && mode != .emoji {
+            let prefix = before
+            if prefix.last == " " { textDocumentProxy.deleteBackward() }
+            let previous = prefix.last == " " ? prefix.dropLast().last : prefix.last
+            if previous?.isLetter == true {
+                textDocumentProxy.insertText(text == ":" ? " " : " ")
             }
         }
         textDocumentProxy.insertText(text)
