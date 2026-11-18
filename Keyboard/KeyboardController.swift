@@ -145,11 +145,15 @@ class KeyboardController: UIInputViewController {
             for (i, line) in layout.enumerated() {
                 var buttons = line.map { characterKey(shift != .off && mode == .letters ? String($0).uppercased() : String($0)) }
                 if i == 2 {
+                    if mode == .letters { buttons.append(characterKey("’")) }
                     let toggle = mode == .letters ? (shift == .locked ? "⇪" : "⇧") : (mode == .numbers ? "#+=" : "123")
                     buttons.insert(key(toggle, special: true) { [weak self] in self?.toggleShift() }, at: 0)
                     buttons.append(deletionKey())
                 }
-                row(buttons)
+                if i == 2 {
+                    let widths: [CGFloat] = [1.4] + Array(repeating: 1, count: buttons.count - 2) + [1.4]
+                    row(buttons, weights: widths)
+                } else { row(buttons) }
             }
         }
         var bottom = [key(mode == .letters ? "123" : "ABC", special: true) { [weak self] in

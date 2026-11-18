@@ -31,6 +31,17 @@ Les cinq premiers WAV de l’archive de test française de [FLEURS, Google et co
 
 Ces essais portent sur du français lu, avec cinq extraits du même corpus. La mesure ne couvre ni la conversation spontanée, ni la batterie, ni les performances iPhone.
 
+## Moteur Swift de l’application, compilé sous Linux
+
+Compilation de App/Inference.swift avec Swift 6.1.2 et la bibliothèque native whisper.cpp. Le premier essai sur un enregistrement FLEURS de faible niveau a révélé que le seuil fixe de détection rejetait de la parole audible. Le filtre utilise maintenant la variance par trame et une estimation du bruit. Les cinq extraits humains passent ce filtre avec les deux modèles.
+
+| Réglage réellement utilisé par l’application | WER, mêmes 161 mots | Temps Linux, 5 processus | Pic de mémoire résidente |
+|---|---:|---:|---:|
+| Base, décodage glouton | 54 / 161 = 33,5 % | 10,70 s | 167,7 Mio |
+| Small, recherche en faisceau | 20 / 161 = 12,4 % | 40,67 s | 478,2 Mio |
+
+Les tests du code Swift utilisent les mêmes échantillons PCM à 16 kHz. La première table sur les voix humaines utilise les réglages par défaut du CLI natif. Le code de production fixe explicitement sa stratégie de décodage. Les deux chemins ont été exercés indépendamment.
+
 ## Tests Apple du workflow
 
 * Un test télécharge réellement Base, observe la progression, vérifie son intégrité et le prépare.

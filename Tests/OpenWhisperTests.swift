@@ -22,6 +22,9 @@ final class OpenWhisperTests: XCTestCase {
         try inbox.publish("Un été à Lyon.")
         XCTAssertEqual(try inbox.consume(), "Un été à Lyon.")
         XCTAssertNil(try inbox.consume())
+        try inbox.publish("Sortie expirée")
+        inbox.discardExpired(now: Date().addingTimeInterval(601))
+        XCTAssertNil(try inbox.consume())
         try inbox.publish("Effacer")
         try inbox.clear()
         XCTAssertNil(try inbox.consume())
@@ -30,7 +33,9 @@ final class OpenWhisperTests: XCTestCase {
     func testVoiceGate() {
         XCTAssertFalse(VoiceGate.containsSound(Array(repeating: 0, count: 48000)))
         XCTAssertFalse(VoiceGate.containsSound([1] + Array(repeating: 0, count: 16000)))
-        XCTAssertTrue(VoiceGate.containsSound(Array(repeating: 0.1, count: 16000)))
+        XCTAssertFalse(VoiceGate.containsSound(Array(repeating: 0.1, count: 16000)))
+        let quiet = (0..<8000).map { Float(sin(Double($0) * 0.1)) * 0.001 }
+        XCTAssertTrue(VoiceGate.containsSound(Array(repeating: 0, count: 8000) + quiet))
     }
 
     func testDownloadIntegrityProgressAndPreparation() async throws {

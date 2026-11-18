@@ -13,8 +13,12 @@ done
 for bundle in "$app" "$ext"; do
   if codesign --verify "$bundle" 2>/dev/null; then echo "Signature inattendue : $bundle" >&2; exit 1; fi
 done
-mkdir -p dist/Payload
-ditto "$app" dist/Payload/OpenWhisper.app
-(cd dist && /usr/bin/zip -qry OpenWhisper-unsigned.ipa Payload)
-unzip -tq dist/OpenWhisper-unsigned.ipa
-shasum -a 256 dist/OpenWhisper-unsigned.ipa > dist/SHA256.txt
+mkdir -p dist
+staging=$(mktemp -d "$PWD/dist/staging.XXXXXX")
+trap 'rm -rf "$staging"' EXIT
+mkdir "$staging/Payload"
+ditto "$app" "$staging/Payload/OpenWhisper.app"
+(cd "$staging" && /usr/bin/zip -qry OpenWhisper-unsigned.ipa Payload)
+python3 scripts/verify-ipa.py "$staging/OpenWhisper-unsigned.ipa"
+mv "$staging/OpenWhisper-unsigned.ipa" dist/OpenWhisper-unsigned.ipa
+(cd dist && shasum -a 256 OpenWhisper-unsigned.ipa > SHA256.txt)

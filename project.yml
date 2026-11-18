@@ -50,7 +50,7 @@ targets:
       - path: Tests/Fixtures
         buildPhase: resources
       - path: Keyboard/KeyboardController.swift
-      - path: Shared/Shared.swift
+      - path: Shared
     dependencies:
       - target: OpenWhisper
 schemes:
