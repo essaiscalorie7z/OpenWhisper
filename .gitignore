@@ -6,3 +6,4 @@ vendor/
 *.xcresult
 *.ipa
 .DS_Store
+Tests/Fixtures/*.bin

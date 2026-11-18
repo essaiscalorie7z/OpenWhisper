@@ -43,7 +43,13 @@ targets:
   OpenWhisperTests:
     type: bundle.unit-test
     platform: iOS
-    sources: [Tests]
+    sources:
+      - path: Tests
+        excludes: [Fixtures]
+      - path: Tests/Fixtures
+        buildPhase: resources
+      - path: Keyboard/KeyboardController.swift
+      - path: Shared/Shared.swift
     dependencies:
       - target: OpenWhisper
 schemes:

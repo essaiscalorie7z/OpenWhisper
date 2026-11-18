@@ -1,6 +1,6 @@
 import UIKit
 
-final class KeyboardController: UIInputViewController {
+class KeyboardController: UIInputViewController {
     enum Mode { case letters, numbers, symbols, emoji }
     enum Shift { case off, once, locked }
     private var mode = Mode.letters
@@ -225,7 +225,7 @@ final class KeyboardController: UIInputViewController {
         textDocumentProxy.insertText(value)
     }
     private func accept(_ i: Int) {
-        guard before == proposedContext, i < proposed.count, after.first?.isLetter != true else { refresh(); return }
+        guard before == proposedContext, i < proposed.count, (textDocumentProxy.selectedText ?? "").isEmpty, after.first?.isLetter != true else { refresh(); return }
         replaceWord(with: proposed[i])
         if after.isEmpty || after.first?.isLetter == true { textDocumentProxy.insertText(" "); pendingSpace = true }
         adjustShift(); render()
